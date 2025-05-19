@@ -1,0 +1,91 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(to top left, #39b385, #a3e06ee1);
+    color: #333;
+    min-height: 100%;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    max-width: 1000px;
+    margin: 30px auto;  /* Ajoute une marge en haut pour déplacer le conteneur plus bas */
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #2a5d84;
+    margin-bottom: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background-color: #2a5d84;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+.filter-form {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.filter-form select {
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: 1px solid #999;
+}
+
+.pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.pagination a {
+    text-decoration: none;
+    color: #2a5d84;
+    margin: 0 10px;
+    font-weight: bold;
+}
+
+.pagination span {
+    margin: 0 10px;
+    font-weight: bold;
+}
+/* Lien de retour */
+p a {
+  display: inline-block;
+  margin-top: 20px;
+  color: #0a2e5c;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s;
+  font-weight: bold;
+  margin-left: 240px;
+}
+
+p a:hover {
+  color: #083d81;
+}
