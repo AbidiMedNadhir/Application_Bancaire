@@ -1,73 +1,41 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'client') {
-    header('Location: ../../signin.php');
+require_once '../connect.php'; // Ce fichier inclut maintenant l'autoloader et les classes
+
+// Vérification de l'authentification et du rôle
+Auth::requireRole('client', '../signin.php');
+
+try {
+    // Récupération du client connecté
+    $client = Auth::getCurrentClient();
+    
+    if (!$client) {
+        echo "Client introuvable.";
+        exit();
+    }
+    
+    // Pagination
+    $limit = 6;
+    $page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+    
+    // Filtrage par type
+    $type = $_GET['type'] ?? '';
+    $allowed_types = ['depot', 'retrait', 'transfert'];
+    
+    if ($type && !in_array($type, $allowed_types)) {
+        $type = '';
+    }
+    
+    // Récupération des transactions avec la classe Client
+    $transactions = $client->getTransactionHistory($type, $page, $limit);
+    $total_transactions = $client->countTransactions($type);
+    $total_pages = ceil($total_transactions / $limit);
+    $offset = ($page - 1) * $limit;
+    
+} catch (Exception $e) {
+    echo "Erreur : " . $e->getMessage();
     exit();
 }
-
-require_once('../connect.php');
-
-// Récupération de l'ID du client connecté
-$user_id = $_SESSION['user_id'];
-
-// Trouver l'id de la table `clients` associé à ce user_id
-$stmt = $connexion->prepare("SELECT id FROM clients WHERE user_id = ?");
-$stmt->execute([$user_id]);
-$client = $stmt->fetch();
-$client_id = $client['id'] ?? null;
-
-if (!$client_id) {
-    echo "Client introuvable.";
-    exit();
-}
-
-// Pagination
-$limit = 6;
-$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
-$offset = ($page - 1) * $limit;
-
-// Filtrage par type
-$type = $_GET['type'] ?? '';
-$allowed_types = ['depot', 'retrait', 'transfert'];
-$type_clause = "";
-$params = [$client_id];
-
-if ($type && in_array($type, $allowed_types)) {
-    $type_clause = "AND type = ?";
-    $params[] = $type;
-}
-
-// Nombre total de transactions
-$sql_count = "SELECT COUNT(*) FROM transactions 
-              WHERE (client_id = ? OR destinataire_id = ?) $type_clause";
-$params_count = [$client_id, $client_id];
-if ($type_clause) {
-    $params_count[] = $type;
-}
-$stmt = $connexion->prepare($sql_count);
-$stmt->execute($params_count);
-$total_transactions = $stmt->fetchColumn();
-$total_pages = ceil($total_transactions / $limit);
-
-// Récupération des transactions
-$sql = "SELECT t.*, 
-       c1.nom AS expediteur_nom, c1.prenom AS expediteur_prenom,
-       c2.nom AS destinataire_nom, c2.prenom AS destinataire_prenom
-FROM transactions t
-LEFT JOIN clients c1 ON t.client_id = c1.id
-LEFT JOIN clients c2 ON t.destinataire_id = c2.id
-WHERE (t.client_id = ? OR t.destinataire_id = ?) $type_clause
-ORDER BY t.date_transaction DESC
-LIMIT $limit OFFSET $offset";
-
-$params_query = [$client_id, $client_id];
-if ($type_clause) {
-    $params_query[] = $type;
-}
-
-$stmt = $connexion->prepare($sql);
-$stmt->execute($params_query);
-$transactions = $stmt->fetchAll();
 ?>
 
 <!DOCTYPE html>
@@ -130,7 +98,8 @@ $transactions = $stmt->fetchAll();
             <?php endif; ?>
         </div>
     </div>
-       <p><a href="dashboard_user.php">← Retour au tableau de bord</a></p>
+    <p><a href="dashboard_user.php">← Retour au tableau de bord</a></p>
 
+    <script src="/banque_app/js/app.js"></script>
 </body>
 </html>

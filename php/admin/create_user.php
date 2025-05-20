@@ -53,5 +53,7 @@
             <button type="submit">Créer le client</button>
         </form>
     </main>
+    <script src="/banque_app/js/app.js"></script>
+
 </body>
 </html>

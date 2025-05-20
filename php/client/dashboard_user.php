@@ -68,11 +68,8 @@ try {
             <i class="fas fa-receipt card-icon"></i>
             <span>Transaction History</span>
         </a>
-        <!-- <a href="change_password.php" class="card">
-            <i class="fas fa-lock card-icon"></i>
-            <span>Change Password</span>
-        </a> -->
     </div>
+    <script src="/banque_app/js/app.js"></script>
 </main>
 
 </body>

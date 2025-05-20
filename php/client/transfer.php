@@ -1,60 +1,33 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'client') {
-    header("Location: ../signin.php");
-    exit;
-}
+require_once '../connect.php'; // Ce fichier inclut maintenant l'autoloader et les classes
 
-require_once '../connect.php';
+// Vérification de l'authentification et du rôle
+Auth::requireRole('client', '../signin.php');
 
 $success = "";
 $error = "";
 
-$stmt = $connexion->prepare("SELECT id, solde, numero_compte FROM clients WHERE user_id = ?");
-$stmt->execute([$_SESSION['user_id']]);
-$client = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$client) {
-    $error = "Client introuvable.";
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $recipient_account = trim($_POST['recipient_account']);
-    $amount = floatval($_POST['amount']);
-
-    if ($amount <= 0) {
-        $error = "Le montant doit être supérieur à zéro.";
-    } elseif ($amount > $client['solde']) {
-        $error = "Solde insuffisant.";
-    } else {
-        $stmt = $connexion->prepare("SELECT id FROM clients WHERE numero_compte = ? AND id != ?");
-        $stmt->execute([$recipient_account, $client['id']]);
-        $recipient = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$recipient) {
-            $error = "Le compte destinataire est invalide.";
-        } else {
-            try {
-                $connexion->beginTransaction();
-
-                // Débiter l'expéditeur
-                $updateSender = $connexion->prepare("UPDATE clients SET solde = solde - ? WHERE id = ?");
-                $updateSender->execute([$amount, $client['id']]);
-
-                // Créditer le destinataire
-                $updateRecipient = $connexion->prepare("UPDATE clients SET solde = solde + ? WHERE id = ?");
-                $updateRecipient->execute([$amount, $recipient['id']]);
-
-                // Enregistrer la transaction
-                $insert = $connexion->prepare("INSERT INTO transactions (client_id, type, montant, destinataire_id) VALUES (?, 'transfert', ?, ?)");
-                $insert->execute([$client['id'], $amount, $recipient['id']]);
-
-                $connexion->commit();
-                $success = "Transfert effectué avec succès.";
-            } catch (PDOException $e) {
-                $connexion->rollBack();
-                $error = "Erreur : " . $e->getMessage();
-            }
+try {
+    // Récupération du client connecté
+    $client = Auth::getCurrentClient();
+    
+    if (!$client) {
+        $error = "Client introuvable.";
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $recipient_account = trim($_POST['recipient_account']);
+        $amount = floatval($_POST['amount']);
+        
+        try {
+            // Utilisation de la méthode transfer de la classe Client
+            $client->transfer($recipient_account, $amount);
+            $success = "Transfert effectué avec succès.";
+        } catch (Exception $e) {
+            $error = "Erreur : " . $e->getMessage();
         }
     }
+} catch (Exception $e) {
+    $error = "Erreur : " . $e->getMessage();
 }
 ?>
 
@@ -65,8 +38,6 @@ if (!$client) {
     <title>Transfert</title>
     <link rel="stylesheet" href="/banque_app/css/transfer.css?v=<?= time(); ?>">
 </head>
-<body>
-
 <body>
     <div class="container">
         <h1>Faire un Transfert</h1>
@@ -89,5 +60,7 @@ if (!$client) {
 
         <a class="back-btn" href="dashboard_user.php">← Retour au tableau de bord</a>
     </div>
+    <script src="/banque_app/js/app.js"></script>
+
 </body>
 </html>

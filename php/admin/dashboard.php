@@ -1,17 +1,14 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
-    header("Location: ../signin.php");
-    exit;
-}
+require_once '../connect.php'; // Ce fichier inclut maintenant l'autoloader et les classes
 
-require_once '../connect.php';
+// Vérification de l'authentification et du rôle
+Auth::requireRole('admin', '../signin.php');
 
 try {
-    $stmt = $connexion->query("SELECT COUNT(*) AS total FROM clients");
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $totalClients = $row['total'];  // $row['total'] contient le nbre total de clients.
-} catch (PDOException $e) {
+    // Utilisation de la classe Client pour compter le nombre total de clients
+    $totalClients = count(Client::getAll());
+} catch (Exception $e) {
     $totalClients = "Erreur de connexion à la base.";
 }
 ?>
@@ -28,7 +25,7 @@ try {
     <div class="nav-container">
         <a href="dashboard.php" class="logo">BankApp Admin</a>
         <div class="user-info">
-            <span>Welcome, <?= htmlspecialchars($_SESSION['username']); ?></span>
+            <span>Welcome, <?= htmlspecialchars($_SESSION['username'] ); ?></span>
             <a href="../../logout.php" class="logout-btn">Logout</a>
         </div>
     </div>
@@ -77,5 +74,7 @@ try {
 </main>
 
 <script src="/banque_app/js/dashboard.js?v=<?php echo time(); ?>"></script>
+<script src="/banque_app/js/app.js"></script>
+
 </body>
 </html>

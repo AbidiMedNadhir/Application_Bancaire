@@ -1,13 +1,10 @@
 <?php
-session_start();
+require_once __DIR__ . '/php/connect.php';
 
-// Supprimer toutes les variables de session
-$_SESSION = [];
+// Utilisation de la classe Auth pour la déconnexion
+Auth::logout();
 
-// Détruire la session complètement
-session_destroy();
-
-// Rediriger vers la page de connexion
-header("Location: signin.php?logout=success");
-exit();
+// Redirection vers la page de connexion
+header("Location: signin.php");
+exit;
 ?>

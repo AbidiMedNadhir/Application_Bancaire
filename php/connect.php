@@ -1,14 +1,12 @@
 <?php
-    $servername = "localhost";
-    $username = "root";
-    $password = "";
-    $base = "banque_db";
+// Inclusion de l'autoloader pour charger les classes
+require_once __DIR__ . '/../classes/autoload.php';
 
-    try {
-       $connexion = new PDO("mysql:host=$servername;dbname=$base",$username,$password);
-    }
-    catch(PDOException $e)
-    {
-     echo "Connection failed: " . $e->getMessage(); 
-    }
+// Création d'une variable $connexion pour maintenir la compatibilité avec le code existant
+try {
+    $db = Database::getInstance();
+    $connexion = $db->getConnection();
+} catch (Exception $e) {
+    echo "Connection failed: " . $e->getMessage();
+}
 ?>

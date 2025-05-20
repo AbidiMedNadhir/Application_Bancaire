@@ -1,9 +1,8 @@
 <?php
 session_start();
-require_once 'connect.php'; // Fichier de connexion PDO
+require_once 'connect.php'; // Ce fichier inclut maintenant l'autoloader et les classes
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {   //VVérifie que les données proviennent bien d’un formulaire POST.
-    // 	Récupèrent les valeurs envoyées par le formulaire.
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $username = trim($_POST["username"]);
     $password = $_POST["password"]; // Ne pas trim le password
 
@@ -14,43 +13,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {   //VVérifie que les données provi
     }
 
     try {
-        // Vérifie si l'utilisateur existe
-        $stmt = $connexion->prepare("SELECT * FROM users WHERE username = :username LIMIT 1");
-        $stmt->execute(['username' => $username]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($user) {
-            $stored_password = $user['password']; //  C’est le mot de passe enregistré en base de données
-
-            // Vérifie avec password_verify (si hashé), sinon comparaison directe
-            if (password_verify($password, $stored_password) || $stored_password === $password){
-                // Authentification réussie
-                $_SESSION['user_id'] = $user['id'];
-                $_SESSION['username'] = $user['username'];
-                $_SESSION['role'] = $user['role'];
-
-                // Redirection selon le rôle
-                if ($user['role'] === 'admin') {
-                    header("Location: /banque_app/php/admin/dashboard.php");
-                } elseif ($user['role'] === 'client') {
-                    header("Location: /banque_app/php/client/dashboard_user.php");
-                } else {
-                    $_SESSION['error'] = "Unknown user role.";
-                    header("Location: signin.php");
-                }
-                exit;
+        // Utilisation de la classe Auth pour l'authentification
+        if (Auth::login($username, $password)) {
+            // Redirection selon le rôle
+            if (Auth::hasRole('admin')) {
+                header("Location: /banque_app/php/admin/dashboard.php");
+            } elseif (Auth::hasRole('client')) {
+                header("Location: /banque_app/php/client/dashboard_user.php");
             } else {
-                $_SESSION['error'] = "Incorrect password.";
+                $_SESSION['error'] = "Unknown user role.";
                 header("Location: signin.php");
-                exit;
             }
+            exit;
         } else {
-            $_SESSION['error'] = "User not found.";
+            $_SESSION['error'] = "Invalid username or password.";
             header("Location: signin.php");
             exit;
         }
-    } catch (PDOException $e) {
-        $_SESSION['error'] = "Database error: " . $e->getMessage();
+    } catch (Exception $e) {
+        $_SESSION['error'] = "Error: " . $e->getMessage();
         header("Location: signin.php");
         exit;
     }
@@ -59,3 +40,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {   //VVérifie que les données provi
     header("Location: signin.php");
     exit;
 }
+?>

@@ -1,48 +1,32 @@
 <?php
 session_start();
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'client') {
-    header("Location: ../signin.php");
-    exit;
-}
+require_once '../connect.php'; // Ce fichier inclut maintenant l'autoloader et les classes
 
-require_once '../connect.php';
+// Vérification de l'authentification et du rôle
+Auth::requireRole('client', '../signin.php');
 
 $success = "";
 $error = "";
 
-// Récupération du client lié à l'utilisateur connecté
-$stmt = $connexion->prepare("SELECT id, solde FROM clients WHERE user_id = ?");
-$stmt->execute([$_SESSION['user_id']]);
-$client = $stmt->fetch(PDO::FETCH_ASSOC);
-
-if (!$client) {
-    $error = "Erreur : client introuvable.";
-} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $amount = floatval($_POST['amount']);
-
-    if ($amount <= 0) {
-        $error = "Le montant doit être supérieur à zéro.";
-    } elseif ($amount > $client['solde']) {
-        $error = "Fonds insuffisants. Solde actuel : " . $client['solde'] . " €";
-    } else {
+try {
+    // Récupération du client connecté
+    $client = Auth::getCurrentClient();
+    
+    if (!$client) {
+        $error = "Erreur : client introuvable.";
+    } elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $amount = floatval($_POST['amount']);
+        
         try {
-            $connexion->beginTransaction();
-
-            // Déduire le montant du solde
-            $update = $connexion->prepare("UPDATE clients SET solde = solde - ? WHERE id = ?");
-            $update->execute([$amount, $client['id']]);
-
-            // Enregistrer la transaction de type 'retrait'
-            $insert = $connexion->prepare("INSERT INTO transactions (client_id, type, montant) VALUES (?, 'retrait', ?)");
-            $insert->execute([$client['id'], $amount]);
-
-            $connexion->commit();
+            // Utilisation de la méthode withdraw de la classe Client
+            $client->withdraw($amount);
             $success = "Retrait de " . number_format($amount, 2, ',', ' ') . " € effectué avec succès.";
-        } catch (PDOException $e) {
-            $connexion->rollBack();
-            $error = "Une erreur est survenue : " . $e->getMessage();
+        } catch (Exception $e) {
+            $error = "Erreur : " . $e->getMessage();
         }
     }
+} catch (Exception $e) {
+    $error = "Erreur : " . $e->getMessage();
 }
 ?>
 
@@ -63,7 +47,7 @@ if (!$client) {
             <p class="error"><?= $error ?></p>
         <?php endif; ?>
 
-        <form method="POST">
+        <form method="POST" id="withdraw-form">
             <label for="amount">Montant à retirer (€) :</label>
             <input type="number" name="amount" id="amount" min="0.01" step="0.01" required>
             <button type="submit">Valider le retrait</button>
@@ -71,5 +55,7 @@ if (!$client) {
 
         <a class="back-link" href="dashboard_user.php">← Retour au tableau de bord</a>
     </div>
+    <script src="/banque_app/js/app.js"></script>
+
 </body>
 </html>
